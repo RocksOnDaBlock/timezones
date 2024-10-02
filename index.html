@@ -63,58 +63,59 @@
         <div id="map" class="neumorphic rounded-lg mb-8 h-96"></div>
         <div id="stateList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
     </div>
+
     <script>
         const states = [
-            {name: 'Alabama', timezone: 'America/Chicago'},
-            {name: 'Alaska', timezone: 'America/Anchorage'},
-            {name: 'Arizona', timezone: 'America/Phoenix'},
-            {name: 'Arkansas', timezone: 'America/Chicago'},
-            {name: 'California', timezone: 'America/Los_Angeles'},
-            {name: 'Colorado', timezone: 'America/Denver'},
-            {name: 'Connecticut', timezone: 'America/New_York'},
-            {name: 'Delaware', timezone: 'America/New_York'},
-            {name: 'Florida', timezone: 'America/New_York'},
-            {name: 'Georgia', timezone: 'America/New_York'},
-            {name: 'Hawaii', timezone: 'Pacific/Honolulu'},
-            {name: 'Idaho', timezone: 'America/Boise'},
-            {name: 'Illinois', timezone: 'America/Chicago'},
-            {name: 'Indiana', timezone: 'America/Indiana/Indianapolis'},
-            {name: 'Iowa', timezone: 'America/Chicago'},
-            {name: 'Kansas', timezone: 'America/Chicago'},
-            {name: 'Kentucky', timezone: 'America/New_York'},
-            {name: 'Louisiana', timezone: 'America/Chicago'},
-            {name: 'Maine', timezone: 'America/New_York'},
-            {name: 'Maryland', timezone: 'America/New_York'},
-            {name: 'Massachusetts', timezone: 'America/New_York'},
-            {name: 'Michigan', timezone: 'America/Detroit', neverCall: true},
-            {name: 'Minnesota', timezone: 'America/Chicago'},
-            {name: 'Mississippi', timezone: 'America/Chicago'},
-            {name: 'Missouri', timezone: 'America/Chicago'},
-            {name: 'Montana', timezone: 'America/Denver'},
-            {name: 'Nebraska', timezone: 'America/Chicago'},
-            {name: 'Nevada', timezone: 'America/Los_Angeles'},
-            {name: 'New Hampshire', timezone: 'America/New_York'},
-            {name: 'New Jersey', timezone: 'America/New_York'},
-            {name: 'New Mexico', timezone: 'America/Denver'},
-            {name: 'New York', timezone: 'America/New_York', neverCall: true},
-            {name: 'North Carolina', timezone: 'America/New_York'},
-            {name: 'North Dakota', timezone: 'America/Chicago'},
-            {name: 'Ohio', timezone: 'America/New_York'},
-            {name: 'Oklahoma', timezone: 'America/Chicago'},
-            {name: 'Oregon', timezone: 'America/Los_Angeles'},
-            {name: 'Pennsylvania', timezone: 'America/New_York'},
-            {name: 'Rhode Island', timezone: 'America/New_York'},
-            {name: 'South Carolina', timezone: 'America/New_York'},
-            {name: 'South Dakota', timezone: 'America/Chicago'},
-            {name: 'Tennessee', timezone: 'America/Chicago'},
-            {name: 'Texas', timezone: 'America/Chicago'},
-            {name: 'Utah', timezone: 'America/Denver'},
-            {name: 'Vermont', timezone: 'America/New_York'},
-            {name: 'Virginia', timezone: 'America/New_York'},
-            {name: 'Washington', timezone: 'America/Los_Angeles'},
-            {name: 'West Virginia', timezone: 'America/New_York'},
-            {name: 'Wisconsin', timezone: 'America/Chicago'},
-            {name: 'Wyoming', timezone: 'America/Denver'}
+            { name: 'Alabama', timezone: 'America/Chicago' },
+            { name: 'Alaska', timezone: 'America/Anchorage' },
+            { name: 'Arizona', timezone: 'America/Phoenix' },
+            { name: 'Arkansas', timezone: 'America/Chicago' },
+            { name: 'California', timezone: 'America/Los_Angeles' },
+            { name: 'Colorado', timezone: 'America/Denver' },
+            { name: 'Connecticut', timezone: 'America/New_York' },
+            { name: 'Delaware', timezone: 'America/New_York' },
+            { name: 'Florida', timezone: 'America/New_York' },
+            { name: 'Georgia', timezone: 'America/New_York' },
+            { name: 'Hawaii', timezone: 'Pacific/Honolulu' },
+            { name: 'Idaho', timezone: 'America/Boise' },
+            { name: 'Illinois', timezone: 'America/Chicago' },
+            { name: 'Indiana', timezone: 'America/Indiana/Indianapolis' },
+            { name: 'Iowa', timezone: 'America/Chicago' },
+            { name: 'Kansas', timezone: 'America/Chicago' },
+            { name: 'Kentucky', timezone: 'America/New_York' },
+            { name: 'Louisiana', timezone: 'America/Chicago' },
+            { name: 'Maine', timezone: 'America/New_York' },
+            { name: 'Maryland', timezone: 'America/New_York' },
+            { name: 'Massachusetts', timezone: 'America/New_York' },
+            { name: 'Michigan', timezone: 'America/Detroit', neverCall: true },
+            { name: 'Minnesota', timezone: 'America/Chicago' },
+            { name: 'Mississippi', timezone: 'America/Chicago' },
+            { name: 'Missouri', timezone: 'America/Chicago' },
+            { name: 'Montana', timezone: 'America/Denver' },
+            { name: 'Nebraska', timezone: 'America/Chicago' },
+            { name: 'Nevada', timezone: 'America/Los_Angeles' },
+            { name: 'New Hampshire', timezone: 'America/New_York' },
+            { name: 'New Jersey', timezone: 'America/New_York' },
+            { name: 'New Mexico', timezone: 'America/Denver' },
+            { name: 'New York', timezone: 'America/New_York', neverCall: true },
+            { name: 'North Carolina', timezone: 'America/New_York' },
+            { name: 'North Dakota', timezone: 'America/Chicago' },
+            { name: 'Ohio', timezone: 'America/New_York' },
+            { name: 'Oklahoma', timezone: 'America/Chicago' },
+            { name: 'Oregon', timezone: 'America/Los_Angeles' },
+            { name: 'Pennsylvania', timezone: 'America/New_York' },
+            { name: 'Rhode Island', timezone: 'America/New_York' },
+            { name: 'South Carolina', timezone: 'America/New_York' },
+            { name: 'South Dakota', timezone: 'America/Chicago' },
+            { name: 'Tennessee', timezone: 'America/Chicago' },
+            { name: 'Texas', timezone: 'America/Chicago' },
+            { name: 'Utah', timezone: 'America/Denver' },
+            { name: 'Vermont', timezone: 'America/New_York' },
+            { name: 'Virginia', timezone: 'America/New_York' },
+            { name: 'Washington', timezone: 'America/Los_Angeles' },
+            { name: 'West Virginia', timezone: 'America/New_York' },
+            { name: 'Wisconsin', timezone: 'America/Chicago' },
+            { name: 'Wyoming', timezone: 'America/Denver' }
         ];
 
         // Load emergency states from local storage
@@ -127,39 +128,31 @@
             states.forEach(state => {
                 const now = moment().tz(state.timezone);
                 const hour = now.hour();
-                let status = 'OK to call';
-                let statusClass = 'bg-green-500';
-
-                if (emergencyStates.includes(state.name)) {
-                    status = 'Do Not Call (Emergency)';
-                    statusClass = 'bg-red-500 emergency-pulse';
-                } else if (state.neverCall) {
-                    status = 'Never Call';
-                    statusClass = 'bg-gray-500';
-                } else if (hour < 8 || hour >= 20) {
-                    status = 'Do Not Call';
-                    statusClass = 'bg-yellow-500';
-                }
+                const isGoodToCall = !state.neverCall && hour >= 8 && hour < 21;
+                const isEmergency = emergencyStates.includes(state.name);
 
                 const stateElement = document.createElement('div');
-                stateElement.className = `neumorphic p-4 rounded-lg ${statusClass} text-white`;
+                stateElement.className = `neumorphic p-4 rounded-lg ${isEmergency ? 'bg-red-200 dark:bg-red-800 emergency-pulse' : (isGoodToCall ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900')}`;
                 stateElement.innerHTML = `
                     <h2 class="text-xl font-bold mb-2">${state.name}</h2>
-                    <p>Time: ${now.format('h:mm A')}</p>
-                    <p>Status: ${status}</p>
-                    <button class="emergency-toggle mt-2 bg-white text-gray-800 px-2 py-1 rounded">
-                        ${emergencyStates.includes(state.name) ? 'Remove Emergency' : 'Set Emergency'}
+                    <p class="text-lg">${now.format('h:mm A')}</p>
+                    <p class="${isGoodToCall ? 'text-green-600 dark:text-green-300' : 'text-red-600 dark:text-red-300'} font-semibold">
+                        ${state.neverCall ? 'Never call' : (isGoodToCall ? 'Good to call' : 'Do not call')}
+                    </p>
+                    ${isEmergency ? '<p class="text-red-600 dark:text-red-300 font-bold">EMERGENCY</p>' : ''}
+                    <button class="mt-2 px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200">
+                        ${isEmergency ? 'Remove Emergency' : 'Set Emergency'}
                     </button>
                 `;
-
-                const emergencyToggle = stateElement.querySelector('.emergency-toggle');
-                emergencyToggle.addEventListener('click', () => toggleEmergency(state.name));
-
                 stateList.appendChild(stateElement);
+
+                // Add event listener to the emergency button
+                const emergencyButton = stateElement.querySelector('button');
+                emergencyButton.addEventListener('click', () => toggleEmergencyState(state.name));
             });
         }
 
-        function toggleEmergency(stateName) {
+        function toggleEmergencyState(stateName) {
             const index = emergencyStates.indexOf(stateName);
             if (index > -1) {
                 emergencyStates.splice(index, 1);
@@ -168,59 +161,47 @@
             }
             localStorage.setItem('emergencyStates', JSON.stringify(emergencyStates));
             updateTimes();
+            initMap();
         }
 
-        function resetEmergencyStates() {
-            emergencyStates = [];
-            localStorage.setItem('emergencyStates', JSON.stringify(emergencyStates));
-            updateTimes();
-        }
+        function initMap() {
+            const width = document.getElementById('map').clientWidth;
+            const height = document.getElementById('map').clientHeight;
 
-        document.getElementById('resetEmergency').addEventListener('click', resetEmergencyStates);
+            d3.select('#map').select('svg').remove();
 
-        function searchStates() {
-            const searchTerm = document.getElementById('search').value.toLowerCase();
-            const stateElements = document.querySelectorAll('#stateList > div');
-            stateElements.forEach(element => {
-                const stateName = element.querySelector('h2').textContent.toLowerCase();
-                if (stateName.includes(searchTerm)) {
-                    element.style.display = 'block';
-                } else {
-                    element.style.display = 'none';
-                }
+            const svg = d3.select('#map')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+
+            const projection = d3.geoAlbersUsa()
+                .translate([width / 2, height / 2])
+                .scale(width);
+
+            const path = d3.geoPath().projection(projection);
+
+            d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json').then(function(us) {
+                svg.append('g')
+                    .selectAll('path')
+                    .data(topojson.feature(us, us.objects.states).features)
+                    .enter().append('path')
+                    .attr('d', path)
+                    .attr('class', 'state')
+                    .attr('fill', d => {
+                        const stateName = d.properties.name;
+                        const state = states.find(s => s.name === stateName);
+                        if (emergencyStates.includes(stateName)) {
+                            return '#ff5252';
+                        } else if (state && state.neverCall) {
+                            return '#f56565';
+                        } else {
+                            return '#ddd';
+                        }
+                    })
+                    .attr('stroke', '#fff');
             });
         }
-
-        document.getElementById('search').addEventListener('input', searchStates);
-
-        function sortStates() {
-            const sortBy = document.getElementById('sort').value;
-            const stateList = document.getElementById('stateList');
-            const stateElements = Array.from(stateList.children);
-
-            stateElements.sort((a, b) => {
-                const aName = a.querySelector('h2').textContent;
-                const bName = b.querySelector('h2').textContent;
-                const aStatus = a.querySelector('p:last-of-type').textContent;
-                const bStatus = b.querySelector('p:last-of-type').textContent;
-
-                if (sortBy === 'alphabetical') {
-                    return aName.localeCompare(bName);
-                } else if (sortBy === 'timezone') {
-                    const aTime = a.querySelector('p').textContent;
-                    const bTime = b.querySelector('p').textContent;
-                    return aTime.localeCompare(bTime);
-                } else if (sortBy === 'emergency') {
-                    if (aStatus.includes('Emergency') && !bStatus.includes('Emergency')) return -1;
-                    if (!aStatus.includes('Emergency') && bStatus.includes('Emergency')) return 1;
-                    return aName.localeCompare(bName);
-                }
-            });
-
-            stateElements.forEach(element => stateList.appendChild(element));
-        }
-
-        document.getElementById('sort').addEventListener('change', sortStates);
 
         function toggleDarkMode() {
             document.body.classList.toggle('dark');
@@ -228,50 +209,54 @@
 
         document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
 
-        // Update times every minute
-        setInterval(updateTimes, 60000);
-        updateTimes();
-
-        // D3.js map visualization
-        const width = 960;
-        const height = 600;
-
-        const svg = d3.select("#map")
-            .append("svg")
-            .attr("viewBox", `0 0 ${width} ${height}`)
-            .attr("preserveAspectRatio", "xMidYMid meet");
-
-        const projection = d3.geoAlbersUsa()
-            .translate([width / 2, height / 2])
-            .scale(1000);
-
-        const path = d3.geoPath().projection(projection);
-
-        d3.json("https://d3js.org/us-10m.v1.json").then(function(us) {
-            svg.append("g")
-                .attr("class", "states")
-                .selectAll("path")
-                .data(topojson.feature(us, us.objects.states).features)
-                .enter().append("path")
-                .attr("d", path)
-                .attr("fill", "#ddd")
-                .attr("stroke", "#fff");
-
-            function updateMap() {
-                svg.selectAll("path")
-                    .attr("fill", d => {
-                        const stateName = states.find(s => s.name === d.properties.name)?.name;
-                        if (emergencyStates.includes(stateName)) {
-                            return "#ff5252";
-                        } else {
-                            return "#ddd";
-                        }
-                    });
-            }
-
-            updateMap();
-            setInterval(updateMap, 60000);
+        document.getElementById('search').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const stateElements = document.querySelectorAll('#stateList > div');
+            stateElements.forEach(el => {
+                const stateName = el.querySelector('h2').textContent.toLowerCase();
+                el.style.display = stateName.includes(searchTerm) ? 'block' : 'none';
+            });
         });
+
+        document.getElementById('sort').addEventListener('change', function(e) {
+            const sortMethod = e.target.value;
+            const stateList = document.getElementById('stateList');
+            const stateElements = Array.from(stateList.children);
+
+            stateElements.sort((a, b) => {
+                const aText = a.querySelector('h2').textContent;
+                const bText = b.querySelector('h2').textContent;
+                if (sortMethod === 'alphabetical') {
+                    return aText.localeCompare(bText);
+                } else if (sortMethod === 'timezone') {
+                    const aTime = a.querySelector('p').textContent;
+                    const bTime = b.querySelector('p').textContent;
+                    return aTime.localeCompare(bTime);
+                } else if (sortMethod === 'emergency') {
+                    const aEmergency = a.classList.contains('emergency-pulse');
+                    const bEmergency = b.classList.contains('emergency-pulse');
+                    return bEmergency - aEmergency;
+                }
+            });
+
+            stateElements.forEach(el => stateList.appendChild(el));
+        });
+
+        document.getElementById('resetEmergency').addEventListener('click', function() {
+            emergencyStates = [];
+            localStorage.setItem('emergencyStates', JSON.stringify(emergencyStates));
+            updateTimes();
+            initMap();
+        });
+
+        updateTimes();
+        setInterval(updateTimes, 60000);
+        initMap();
+
+        // Animations
+        gsap.from("header", {duration: 1, y: -50, opacity: 0, ease: "power3.out"});
+        gsap.from("#map", {duration: 1, scale: 0.9, opacity: 0, ease: "power3.out", delay: 0.5});
+        gsap.from("#stateList > div", {duration: 0.5, y: 20, opacity: 0, stagger: 0.05, ease: "power3.out", delay: 1});
     </script>
 </body>
 </html>
