@@ -60,62 +60,62 @@
                 <button id="resetEmergency" class="neumorphic p-2 rounded-lg bg-red-500 text-white">Reset Emergency States</button>
             </div>
         </header>
-        <div id="map" class="neumorphic rounded-lg mb-8 h-96"></div>
+        <div id="map" class="neumorphic rounded-lg mb-8 h-80"></div>
         <div id="stateList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
     </div>
 
     <script>
         const states = [
-            { name: 'Alabama', timezone: 'America/Chicago' },
-            { name: 'Alaska', timezone: 'America/Anchorage' },
-            { name: 'Arizona', timezone: 'America/Phoenix' },
-            { name: 'Arkansas', timezone: 'America/Chicago' },
-            { name: 'California', timezone: 'America/Los_Angeles' },
-            { name: 'Colorado', timezone: 'America/Denver' },
-            { name: 'Connecticut', timezone: 'America/New_York' },
-            { name: 'Delaware', timezone: 'America/New_York' },
-            { name: 'Florida', timezone: 'America/New_York' },
-            { name: 'Georgia', timezone: 'America/New_York' },
-            { name: 'Hawaii', timezone: 'Pacific/Honolulu' },
-            { name: 'Idaho', timezone: 'America/Boise' },
-            { name: 'Illinois', timezone: 'America/Chicago' },
-            { name: 'Indiana', timezone: 'America/Indiana/Indianapolis' },
-            { name: 'Iowa', timezone: 'America/Chicago' },
-            { name: 'Kansas', timezone: 'America/Chicago' },
-            { name: 'Kentucky', timezone: 'America/New_York' },
-            { name: 'Louisiana', timezone: 'America/Chicago' },
-            { name: 'Maine', timezone: 'America/New_York' },
-            { name: 'Maryland', timezone: 'America/New_York' },
-            { name: 'Massachusetts', timezone: 'America/New_York' },
-            { name: 'Michigan', timezone: 'America/Detroit', neverCall: true },
-            { name: 'Minnesota', timezone: 'America/Chicago' },
-            { name: 'Mississippi', timezone: 'America/Chicago' },
-            { name: 'Missouri', timezone: 'America/Chicago' },
-            { name: 'Montana', timezone: 'America/Denver' },
-            { name: 'Nebraska', timezone: 'America/Chicago' },
-            { name: 'Nevada', timezone: 'America/Los_Angeles' },
-            { name: 'New Hampshire', timezone: 'America/New_York' },
-            { name: 'New Jersey', timezone: 'America/New_York' },
-            { name: 'New Mexico', timezone: 'America/Denver' },
-            { name: 'New York', timezone: 'America/New_York', neverCall: true },
-            { name: 'North Carolina', timezone: 'America/New_York' },
-            { name: 'North Dakota', timezone: 'America/Chicago' },
-            { name: 'Ohio', timezone: 'America/New_York' },
-            { name: 'Oklahoma', timezone: 'America/Chicago' },
-            { name: 'Oregon', timezone: 'America/Los_Angeles' },
-            { name: 'Pennsylvania', timezone: 'America/New_York' },
-            { name: 'Rhode Island', timezone: 'America/New_York' },
-            { name: 'South Carolina', timezone: 'America/New_York' },
-            { name: 'South Dakota', timezone: 'America/Chicago' },
-            { name: 'Tennessee', timezone: 'America/Chicago' },
-            { name: 'Texas', timezone: 'America/Chicago' },
-            { name: 'Utah', timezone: 'America/Denver' },
-            { name: 'Vermont', timezone: 'America/New_York' },
-            { name: 'Virginia', timezone: 'America/New_York' },
-            { name: 'Washington', timezone: 'America/Los_Angeles' },
-            { name: 'West Virginia', timezone: 'America/New_York' },
-            { name: 'Wisconsin', timezone: 'America/Chicago' },
-            { name: 'Wyoming', timezone: 'America/Denver' }
+            { name: 'Alabama', abbreviation: 'AL', timezone: 'America/Chicago' },
+            { name: 'Alaska', abbreviation: 'AK', timezone: 'America/Anchorage' },
+            { name: 'Arizona', abbreviation: 'AZ', timezone: 'America/Phoenix' },
+            { name: 'Arkansas', abbreviation: 'AR', timezone: 'America/Chicago' },
+            { name: 'California', abbreviation: 'CA', timezone: 'America/Los_Angeles' },
+            { name: 'Colorado', abbreviation: 'CO', timezone: 'America/Denver' },
+            { name: 'Connecticut', abbreviation: 'CT', timezone: 'America/New_York' },
+            { name: 'Delaware', abbreviation: 'DE', timezone: 'America/New_York' },
+            { name: 'Florida', abbreviation: 'FL', timezone: 'America/New_York' },
+            { name: 'Georgia', abbreviation: 'GA', timezone: 'America/New_York' },
+            { name: 'Hawaii', abbreviation: 'HI', timezone: 'Pacific/Honolulu' },
+            { name: 'Idaho', abbreviation: 'ID', timezone: 'America/Boise' },
+            { name: 'Illinois', abbreviation: 'IL', timezone: 'America/Chicago' },
+            { name: 'Indiana', abbreviation: 'IN', timezone: 'America/Indiana/Indianapolis' },
+            { name: 'Iowa', abbreviation: 'IA', timezone: 'America/Chicago' },
+            { name: 'Kansas', abbreviation: 'KS', timezone: 'America/Chicago' },
+            { name: 'Kentucky', abbreviation: 'KY', timezone: 'America/New_York' },
+            { name: 'Louisiana', abbreviation: 'LA', timezone: 'America/Chicago' },
+            { name: 'Maine', abbreviation: 'ME', timezone: 'America/New_York' },
+            { name: 'Maryland', abbreviation: 'MD', timezone: 'America/New_York' },
+            { name: 'Massachusetts', abbreviation: 'MA', timezone: 'America/New_York' },
+            { name: 'Michigan', abbreviation: 'MI', timezone: 'America/Detroit', neverCall: true },
+            { name: 'Minnesota', abbreviation: 'MN', timezone: 'America/Chicago' },
+            { name: 'Mississippi', abbreviation: 'MS', timezone: 'America/Chicago' },
+            { name: 'Missouri', abbreviation: 'MO', timezone: 'America/Chicago' },
+            { name: 'Montana', abbreviation: 'MT', timezone: 'America/Denver' },
+            { name: 'Nebraska', abbreviation: 'NE', timezone: 'America/Chicago' },
+            { name: 'Nevada', abbreviation: 'NV', timezone: 'America/Los_Angeles' },
+            { name: 'New Hampshire', abbreviation: 'NH', timezone: 'America/New_York' },
+            { name: 'New Jersey', abbreviation: 'NJ', timezone: 'America/New_York' },
+            { name: 'New Mexico', abbreviation: 'NM', timezone: 'America/Denver' },
+            { name: 'New York', abbreviation: 'NY', timezone: 'America/New_York', neverCall: true },
+            { name: 'North Carolina', abbreviation: 'NC', timezone: 'America/New_York' },
+            { name: 'North Dakota', abbreviation: 'ND', timezone: 'America/Chicago' },
+            { name: 'Ohio', abbreviation: 'OH', timezone: 'America/New_York' },
+            { name: 'Oklahoma', abbreviation: 'OK', timezone: 'America/Chicago' },
+            { name: 'Oregon', abbreviation: 'OR', timezone: 'America/Los_Angeles' },
+            { name: 'Pennsylvania', abbreviation: 'PA', timezone: 'America/New_York' },
+            { name: 'Rhode Island', abbreviation: 'RI', timezone: 'America/New_York' },
+            { name: 'South Carolina', abbreviation: 'SC', timezone: 'America/New_York' },
+            { name: 'South Dakota', abbreviation: 'SD', timezone: 'America/Chicago' },
+            { name: 'Tennessee', abbreviation: 'TN', timezone: 'America/Chicago' },
+            { name: 'Texas', abbreviation: 'TX', timezone: 'America/Chicago' },
+            { name: 'Utah', abbreviation: 'UT', timezone: 'America/Denver' },
+            { name: 'Vermont', abbreviation: 'VT', timezone: 'America/New_York' },
+            { name: 'Virginia', abbreviation: 'VA', timezone: 'America/New_York' },
+            { name: 'Washington', abbreviation: 'WA', timezone: 'America/Los_Angeles' },
+            { name: 'West Virginia', abbreviation: 'WV', timezone: 'America/New_York' },
+            { name: 'Wisconsin', abbreviation: 'WI', timezone: 'America/Chicago' },
+            { name: 'Wyoming', abbreviation: 'WY', timezone: 'America/Denver' }
         ];
 
         // Load emergency states from local storage
@@ -134,7 +134,7 @@
                 const stateElement = document.createElement('div');
                 stateElement.className = `neumorphic p-4 rounded-lg ${isEmergency ? 'bg-red-200 dark:bg-red-800 emergency-pulse' : (isGoodToCall ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900')}`;
                 stateElement.innerHTML = `
-                    <h2 class="text-xl font-bold mb-2">${state.name}</h2>
+                    <h2 class="text-xl font-bold mb-2">${state.name} (${state.abbreviation})</h2>
                     <p class="text-lg">${now.format('h:mm A')}</p>
                     <p class="${isGoodToCall ? 'text-green-600 dark:text-green-300' : 'text-red-600 dark:text-red-300'} font-semibold">
                         ${isEmergency ? 'Do not call (Emergency)' : (state.neverCall ? 'Never call' : (isGoodToCall ? 'Good to call' : 'Do not call'))}
@@ -196,10 +196,27 @@
                         } else if (state && state.neverCall) {
                             return '#f56565';
                         } else {
-                            return '#ddd';
+                            const now = moment().tz(state.timezone);
+                            const hour = now.hour();
+                            return (hour >= 8 && hour < 21) ? '#4CAF50' : '#ff5252';
                         }
                     })
                     .attr('stroke', '#fff');
+
+                svg.append('g')
+                    .selectAll('text')
+                    .data(topojson.feature(us, us.objects.states).features)
+                    .enter().append('text')
+                    .attr('transform', d => `translate(${path.centroid(d)})`)
+                    .attr('dy', '.35em')
+                    .attr('text-anchor', 'middle')
+                    .style('font-size', '10px')
+                    .style('font-weight', 'bold')
+                    .style('fill', '#fff')
+                    .text(d => {
+                        const state = states.find(s => s.name === d.properties.name);
+                        return state ? state.abbreviation : '';
+                    });
             });
         }
 
@@ -228,8 +245,8 @@
             const stateElements = Array.from(stateList.children);
 
             stateElements.sort((a, b) => {
-                const stateA = states.find(s => s.name === a.querySelector('h2').textContent);
-                const stateB = states.find(s => s.name === b.querySelector('h2').textContent);
+                const stateA = states.find(s => s.name === a.querySelector('h2').textContent.split(' (')[0]);
+                const stateB = states.find(s => s.name === b.querySelector('h2').textContent.split(' (')[0]);
 
                 if (sortBy === 'alphabetical') {
                     return stateA.name.localeCompare(stateB.name);
@@ -255,6 +272,7 @@
         updateTimes();
         initMap();
         setInterval(updateTimes, 60000);
+        setInterval(initMap, 60000);
     </script>
 </body>
 </html>
