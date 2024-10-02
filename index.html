@@ -128,8 +128,8 @@
             states.forEach(state => {
                 const now = moment().tz(state.timezone);
                 const hour = now.hour();
-                const isGoodToCall = !state.neverCall && hour >= 8 && hour < 21;
                 const isEmergency = emergencyStates.includes(state.name);
+                const isGoodToCall = !isEmergency && !state.neverCall && hour >= 8 && hour < 21;
 
                 const stateElement = document.createElement('div');
                 stateElement.className = `neumorphic p-4 rounded-lg ${isEmergency ? 'bg-red-200 dark:bg-red-800 emergency-pulse' : (isGoodToCall ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900')}`;
@@ -137,7 +137,7 @@
                     <h2 class="text-xl font-bold mb-2">${state.name}</h2>
                     <p class="text-lg">${now.format('h:mm A')}</p>
                     <p class="${isGoodToCall ? 'text-green-600 dark:text-green-300' : 'text-red-600 dark:text-red-300'} font-semibold">
-                        ${state.neverCall ? 'Never call' : (isGoodToCall ? 'Good to call' : 'Do not call')}
+                        ${isEmergency ? 'Do not call (Emergency)' : (state.neverCall ? 'Never call' : (isGoodToCall ? 'Good to call' : 'Do not call'))}
                     </p>
                     ${isEmergency ? '<p class="text-red-600 dark:text-red-300 font-bold">EMERGENCY</p>' : ''}
                     <button class="mt-2 px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200">
@@ -214,28 +214,31 @@
             const stateElements = document.querySelectorAll('#stateList > div');
             stateElements.forEach(el => {
                 const stateName = el.querySelector('h2').textContent.toLowerCase();
-                el.style.display = stateName.includes(searchTerm) ? 'block' : 'none';
+                if (stateName.includes(searchTerm)) {
+                    el.style.display = '';
+                } else {
+                    el.style.display = 'none';
+                }
             });
         });
 
         document.getElementById('sort').addEventListener('change', function(e) {
-            const sortMethod = e.target.value;
+            const sortBy = e.target.value;
             const stateList = document.getElementById('stateList');
             const stateElements = Array.from(stateList.children);
 
             stateElements.sort((a, b) => {
-                const aText = a.querySelector('h2').textContent;
-                const bText = b.querySelector('h2').textContent;
-                if (sortMethod === 'alphabetical') {
-                    return aText.localeCompare(bText);
-                } else if (sortMethod === 'timezone') {
-                    const aTime = a.querySelector('p').textContent;
-                    const bTime = b.querySelector('p').textContent;
-                    return aTime.localeCompare(bTime);
-                } else if (sortMethod === 'emergency') {
-                    const aEmergency = a.classList.contains('emergency-pulse');
-                    const bEmergency = b.classList.contains('emergency-pulse');
-                    return bEmergency - aEmergency;
+                const stateA = states.find(s => s.name === a.querySelector('h2').textContent);
+                const stateB = states.find(s => s.name === b.querySelector('h2').textContent);
+
+                if (sortBy === 'alphabetical') {
+                    return stateA.name.localeCompare(stateB.name);
+                } else if (sortBy === 'timezone') {
+                    return stateA.timezone.localeCompare(stateB.timezone);
+                } else if (sortBy === 'emergency') {
+                    const emergencyA = emergencyStates.includes(stateA.name);
+                    const emergencyB = emergencyStates.includes(stateB.name);
+                    return emergencyB - emergencyA;
                 }
             });
 
@@ -250,13 +253,8 @@
         });
 
         updateTimes();
-        setInterval(updateTimes, 60000);
         initMap();
-
-        // Animations
-        gsap.from("header", {duration: 1, y: -50, opacity: 0, ease: "power3.out"});
-        gsap.from("#map", {duration: 1, scale: 0.9, opacity: 0, ease: "power3.out", delay: 0.5});
-        gsap.from("#stateList > div", {duration: 0.5, y: 20, opacity: 0, stagger: 0.05, ease: "power3.out", delay: 1});
+        setInterval(updateTimes, 60000);
     </script>
 </body>
 </html>
