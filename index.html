@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>U.S. State Time Zones</title>
+    <title>U.S. State Time Zones & Emergency Status</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.33/moment-timezone-with-data.min.js"></script>
@@ -31,23 +31,33 @@
         .float-animation {
             animation: float 3s ease-in-out infinite;
         }
+        .emergency-pulse {
+            animation: emergency-pulse 2s infinite;
+        }
+        @keyframes emergency-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 82, 82, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0); }
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-800 transition-colors duration-300">
     <div class="container mx-auto px-4 py-8">
         <header class="mb-8">
-            <h1 class="text-4xl font-bold text-center text-gray-800 dark:text-gray-100 mb-4 float-animation">U.S. State Time Zones</h1>
-            <div class="flex justify-center items-center">
-                <input type="text" id="search" placeholder="Search states..." class="neumorphic p-2 rounded-lg mr-4 bg-transparent dark:text-gray-100">
-                <select id="sort" class="neumorphic p-2 rounded-lg mr-4 bg-transparent dark:text-gray-100">
+            <h1 class="text-4xl font-bold text-center text-gray-800 dark:text-gray-100 mb-4 float-animation">U.S. State Time Zones & Emergency Status</h1>
+            <div class="flex justify-center items-center flex-wrap">
+                <input type="text" id="search" placeholder="Search states..." class="neumorphic p-2 rounded-lg mr-4 mb-2 bg-transparent dark:text-gray-100">
+                <select id="sort" class="neumorphic p-2 rounded-lg mr-4 mb-2 bg-transparent dark:text-gray-100">
                     <option value="alphabetical">Sort Alphabetically</option>
                     <option value="timezone">Sort by Timezone</option>
+                    <option value="emergency">Sort by Emergency Status</option>
                 </select>
-                <button id="darkModeToggle" class="neumorphic p-2 rounded-full">
+                <button id="darkModeToggle" class="neumorphic p-2 rounded-full mr-4 mb-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-800 dark:text-gray-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                     </svg>
                 </button>
+                <button id="resetEmergency" class="neumorphic p-2 rounded-lg bg-red-500 text-white">Reset Emergency States</button>
             </div>
         </header>
         <div id="map" class="neumorphic rounded-lg mb-8 h-96"></div>
@@ -108,6 +118,9 @@
             { name: 'Wyoming', timezone: 'America/Denver' }
         ];
 
+        // Load emergency states from local storage
+        let emergencyStates = JSON.parse(localStorage.getItem('emergencyStates')) || [];
+
         function updateTimes() {
             const stateList = document.getElementById('stateList');
             stateList.innerHTML = '';
@@ -116,23 +129,46 @@
                 const now = moment().tz(state.timezone);
                 const hour = now.hour();
                 const isGoodToCall = !state.neverCall && hour >= 8 && hour < 21;
+                const isEmergency = emergencyStates.includes(state.name);
 
                 const stateElement = document.createElement('div');
-                stateElement.className = `neumorphic p-4 rounded-lg ${isGoodToCall ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'}`;
+                stateElement.className = `neumorphic p-4 rounded-lg ${isEmergency ? 'bg-red-200 dark:bg-red-800 emergency-pulse' : (isGoodToCall ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900')}`;
                 stateElement.innerHTML = `
                     <h2 class="text-xl font-bold mb-2">${state.name}</h2>
                     <p class="text-lg">${now.format('h:mm A')}</p>
                     <p class="${isGoodToCall ? 'text-green-600 dark:text-green-300' : 'text-red-600 dark:text-red-300'} font-semibold">
                         ${state.neverCall ? 'Never call' : (isGoodToCall ? 'Good to call' : 'Do not call')}
                     </p>
+                    ${isEmergency ? '<p class="text-red-600 dark:text-red-300 font-bold">EMERGENCY</p>' : ''}
+                    <button class="mt-2 px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200">
+                        ${isEmergency ? 'Remove Emergency' : 'Set Emergency'}
+                    </button>
                 `;
                 stateList.appendChild(stateElement);
+
+                // Add event listener to the emergency button
+                const emergencyButton = stateElement.querySelector('button');
+                emergencyButton.addEventListener('click', () => toggleEmergencyState(state.name));
             });
+        }
+
+        function toggleEmergencyState(stateName) {
+            const index = emergencyStates.indexOf(stateName);
+            if (index > -1) {
+                emergencyStates.splice(index, 1);
+            } else {
+                emergencyStates.push(stateName);
+            }
+            localStorage.setItem('emergencyStates', JSON.stringify(emergencyStates));
+            updateTimes();
+            initMap();
         }
 
         function initMap() {
             const width = document.getElementById('map').clientWidth;
             const height = document.getElementById('map').clientHeight;
+
+            d3.select('#map').select('svg').remove();
 
             const svg = d3.select('#map')
                 .append('svg')
@@ -155,7 +191,13 @@
                     .attr('fill', d => {
                         const stateName = d.properties.name;
                         const state = states.find(s => s.name === stateName);
-                        return state && state.neverCall ? '#f56565' : '#ddd';
+                        if (emergencyStates.includes(stateName)) {
+                            return '#ff5252';
+                        } else if (state && state.neverCall) {
+                            return '#f56565';
+                        } else {
+                            return '#ddd';
+                        }
                     })
                     .attr('stroke', '#fff');
             });
@@ -186,14 +228,25 @@
                 const bText = b.querySelector('h2').textContent;
                 if (sortMethod === 'alphabetical') {
                     return aText.localeCompare(bText);
-                } else {
+                } else if (sortMethod === 'timezone') {
                     const aTime = a.querySelector('p').textContent;
                     const bTime = b.querySelector('p').textContent;
                     return aTime.localeCompare(bTime);
+                } else if (sortMethod === 'emergency') {
+                    const aEmergency = a.classList.contains('emergency-pulse');
+                    const bEmergency = b.classList.contains('emergency-pulse');
+                    return bEmergency - aEmergency;
                 }
             });
 
             stateElements.forEach(el => stateList.appendChild(el));
+        });
+
+        document.getElementById('resetEmergency').addEventListener('click', function() {
+            emergencyStates = [];
+            localStorage.setItem('emergencyStates', JSON.stringify(emergencyStates));
+            updateTimes();
+            initMap();
         });
 
         updateTimes();
