@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>U.S. State Time Zones</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.33/moment-timezone-with-data.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <style>
+        .neumorphic {
+            box-shadow: 5px 5px 10px #d1d9e6, -5px -5px 10px #ffffff;
+        }
+        .neumorphic-inset {
+            box-shadow: inset 5px 5px 10px #d1d9e6, inset -5px -5px 10px #ffffff;
+        }
+        .dark .neumorphic {
+            box-shadow: 5px 5px 10px #131720, -5px -5px 10px #212938;
+        }
+        .dark .neumorphic-inset {
+            box-shadow: inset 5px 5px 10px #131720, inset -5px -5px 10px #212938;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-800 transition-colors duration-300">
+    <div class="container mx-auto px-4 py-8">
+        <header class="mb-8">
+            <h1 class="text-4xl font-bold text-center text-gray-800 dark:text-gray-100 mb-4 float-animation">U.S. State Time Zones</h1>
+            <div class="flex justify-center items-center">
+                <input type="text" id="search" placeholder="Search states..." class="neumorphic p-2 rounded-lg mr-4 bg-transparent dark:text-gray-100">
+                <select id="sort" class="neumorphic p-2 rounded-lg mr-4 bg-transparent dark:text-gray-100">
+                    <option value="alphabetical">Sort Alphabetically</option>
+                    <option value="timezone">Sort by Timezone</option>
+                </select>
+                <button id="darkModeToggle" class="neumorphic p-2 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-800 dark:text-gray-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+        <div id="map" class="neumorphic rounded-lg mb-8 h-96"></div>
+        <div id="stateList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+    </div>
+
+    <script>
+        const states = [
+            { name: 'Alabama', timezone: 'America/Chicago' },
+            { name: 'Alaska', timezone: 'America/Anchorage' },
+            { name: 'Arizona', timezone: 'America/Phoenix' },
+            { name: 'Arkansas', timezone: 'America/Chicago' },
+            { name: 'California', timezone: 'America/Los_Angeles' },
+            { name: 'Colorado', timezone: 'America/Denver' },
+            { name: 'Connecticut', timezone: 'America/New_York' },
+            { name: 'Delaware', timezone: 'America/New_York' },
+            { name: 'Florida', timezone: 'America/New_York' },
+            { name: 'Georgia', timezone: 'America/New_York' },
+            { name: 'Hawaii', timezone: 'Pacific/Honolulu' },
+            { name: 'Idaho', timezone: 'America/Boise' },
+            { name: 'Illinois', timezone: 'America/Chicago' },
+            { name: 'Indiana', timezone: 'America/Indiana/Indianapolis' },
+            { name: 'Iowa', timezone: 'America/Chicago' },
+            { name: 'Kansas', timezone: 'America/Chicago' },
+            { name: 'Kentucky', timezone: 'America/New_York' },
+            { name: 'Louisiana', timezone: 'America/Chicago' },
+            { name: 'Maine', timezone: 'America/New_York' },
+            { name: 'Maryland', timezone: 'America/New_York' },
+            { name: 'Massachusetts', timezone: 'America/New_York' },
+            { name: 'Michigan', timezone: 'America/Detroit', neverCall: true },
+            { name: 'Minnesota', timezone: 'America/Chicago' },
+            { name: 'Mississippi', timezone: 'America/Chicago' },
+            { name: 'Missouri', timezone: 'America/Chicago' },
+            { name: 'Montana', timezone: 'America/Denver' },
+            { name: 'Nebraska', timezone: 'America/Chicago' },
+            { name: 'Nevada', timezone: 'America/Los_Angeles' },
+            { name: 'New Hampshire', timezone: 'America/New_York' },
+            { name: 'New Jersey', timezone: 'America/New_York' },
+            { name: 'New Mexico', timezone: 'America/Denver' },
+            { name: 'New York', timezone: 'America/New_York', neverCall: true },
+            { name: 'North Carolina', timezone: 'America/New_York' },
+            { name: 'North Dakota', timezone: 'America/Chicago' },
+            { name: 'Ohio', timezone: 'America/New_York' },
+            { name: 'Oklahoma', timezone: 'America/Chicago' },
+            { name: 'Oregon', timezone: 'America/Los_Angeles' },
+            { name: 'Pennsylvania', timezone: 'America/New_York' },
+            { name: 'Rhode Island', timezone: 'America/New_York' },
+            { name: 'South Carolina', timezone: 'America/New_York' },
+            { name: 'South Dakota', timezone: 'America/Chicago' },
+            { name: 'Tennessee', timezone: 'America/Chicago' },
+            { name: 'Texas', timezone: 'America/Chicago' },
+            { name: 'Utah', timezone: 'America/Denver' },
+            { name: 'Vermont', timezone: 'America/New_York' },
+            { name: 'Virginia', timezone: 'America/New_York' },
+            { name: 'Washington', timezone: 'America/Los_Angeles' },
+            { name: 'West Virginia', timezone: 'America/New_York' },
+            { name: 'Wisconsin', timezone: 'America/Chicago' },
+            { name: 'Wyoming', timezone: 'America/Denver' }
+        ];
+
+        function updateTimes() {
+            const stateList = document.getElementById('stateList');
+            stateList.innerHTML = '';
+
+            states.forEach(state => {
+                const now = moment().tz(state.timezone);
+                const hour = now.hour();
+                const isGoodToCall = !state.neverCall && hour >= 8 && hour < 21;
+
+                const stateElement = document.createElement('div');
+                stateElement.className = `neumorphic p-4 rounded-lg ${isGoodToCall ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'}`;
+                stateElement.innerHTML = `
+                    <h2 class="text-xl font-bold mb-2">${state.name}</h2>
+                    <p class="text-lg">${now.format('h:mm A')}</p>
+                    <p class="${isGoodToCall ? 'text-green-600 dark:text-green-300' : 'text-red-600 dark:text-red-300'} font-semibold">
+                        ${state.neverCall ? 'Never call' : (isGoodToCall ? 'Good to call' : 'Do not call')}
+                    </p>
+                `;
+                stateList.appendChild(stateElement);
+            });
+        }
+
+        function initMap() {
+            const width = document.getElementById('map').clientWidth;
+            const height = document.getElementById('map').clientHeight;
+
+            const svg = d3.select('#map')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+
+            const projection = d3.geoAlbersUsa()
+                .translate([width / 2, height / 2])
+                .scale(width);
+
+            const path = d3.geoPath().projection(projection);
+
+            d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json').then(function(us) {
+                svg.append('g')
+                    .selectAll('path')
+                    .data(topojson.feature(us, us.objects.states).features)
+                    .enter().append('path')
+                    .attr('d', path)
+                    .attr('class', 'state')
+                    .attr('fill', d => {
+                        const stateName = d.properties.name;
+                        const state = states.find(s => s.name === stateName);
+                        return state && state.neverCall ? '#f56565' : '#ddd';
+                    })
+                    .attr('stroke', '#fff');
+            });
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark');
+        }
+
+        document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
+
+        document.getElementById('search').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const stateElements = document.querySelectorAll('#stateList > div');
+            stateElements.forEach(el => {
+                const stateName = el.querySelector('h2').textContent.toLowerCase();
+                el.style.display = stateName.includes(searchTerm) ? 'block' : 'none';
+            });
+        });
+
+        document.getElementById('sort').addEventListener('change', function(e) {
+            const sortMethod = e.target.value;
+            const stateList = document.getElementById('stateList');
+            const stateElements = Array.from(stateList.children);
+
+            stateElements.sort((a, b) => {
+                const aText = a.querySelector('h2').textContent;
+                const bText = b.querySelector('h2').textContent;
+                if (sortMethod === 'alphabetical') {
+                    return aText.localeCompare(bText);
+                } else {
+                    const aTime = a.querySelector('p').textContent;
+                    const bTime = b.querySelector('p').textContent;
+                    return aTime.localeCompare(bTime);
+                }
+            });
+
+            stateElements.forEach(el => stateList.appendChild(el));
+        });
+
+        updateTimes();
+        setInterval(updateTimes, 60000);
+        initMap();
+
+        // Animations
+        gsap.from("header", {duration: 1, y: -50, opacity: 0, ease: "power3.out"});
+        gsap.from("#map", {duration: 1, scale: 0.9, opacity: 0, ease: "power3.out", delay: 0.5});
+        gsap.from("#stateList > div", {duration: 0.5, y: 20, opacity: 0, stagger: 0.05, ease: "power3.out", delay: 1});
+    </script>
+</body>
+</html>
