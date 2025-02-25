@@ -65,6 +65,22 @@
             background-color: rgba(30, 41, 59, 0.9);
             color: white;
         }
+        .county-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .county-list-item:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        .dark .county-list-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        /* Make sure the svg is responsive and preserves aspect ratio */
+        #map svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-800 transition-colors duration-300">
@@ -86,12 +102,20 @@
                 <button id="resetEmergency" class="neumorphic p-2 rounded-lg bg-red-500 text-white">Reset Emergency States</button>
             </div>
         </header>
-        <div id="map" class="neumorphic rounded-lg mb-8 h-96 relative">
+        <div id="map" class="neumorphic rounded-lg mb-8 h-[500px] relative">
             <button id="backToStates" class="back-button neumorphic p-2 rounded-lg bg-blue-500 text-white hidden">
                 ← Back to States
             </button>
             <div id="mapTooltip" class="tooltip hidden"></div>
         </div>
+        
+        <!-- County List Container (Initially Hidden) -->
+        <div id="countyListContainer" class="neumorphic rounded-lg mb-8 p-4 hidden">
+            <h2 id="countyListTitle" class="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100"></h2>
+            <input type="text" id="countySearch" placeholder="Search counties..." class="neumorphic-inset w-full p-2 rounded-lg mb-4 bg-transparent dark:text-gray-100">
+            <div id="countyList" class="county-list grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2"></div>
+        </div>
+        
         <div id="stateList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
     </div>
 
@@ -157,6 +181,9 @@
         // Current view state
         let currentView = 'states';
         let selectedState = null;
+        
+        // Store all county data when loaded to use for the list
+        let allCounties = {};
 
         function isStateCallable(state) {
             const now = moment().tz(state.timezone);
@@ -210,6 +237,7 @@
                     selectedState = state.name;
                     currentView = 'counties';
                     showCountyMap(state.name);
+                    showCountyList(state.name);
                 });
             });
 
@@ -250,19 +278,31 @@
             
             localStorage.setItem('emergencyCounties', JSON.stringify(emergencyCounties));
             updateCountyMap(stateName);
+            updateCountyList(stateName);
             updateTimes();
         }
 
+        function resizeMap() {
+            if (currentView === 'states') {
+                initMap();
+            } else if (currentView === 'counties' && selectedState) {
+                showCountyMap(selectedState);
+            }
+        }
+
         function initMap() {
-            const width = document.getElementById('map').clientWidth;
-            const height = document.getElementById('map').clientHeight;
+            document.getElementById('countyListContainer').classList.add('hidden');
+            
+            const mapContainer = document.getElementById('map');
+            const width = mapContainer.clientWidth;
+            const height = mapContainer.clientHeight;
 
             d3.select('#map').select('svg').remove();
 
             const svg = d3.select('#map')
                 .append('svg')
-                .attr('width', width)
-                .attr('height', height);
+                .attr('viewBox', `0 0 ${width} ${height}`)
+                .attr('preserveAspectRatio', 'xMidYMid meet');
 
             // Define hatching pattern for states with emergency counties
             const defs = svg.append('defs');
@@ -279,18 +319,25 @@
                 .attr('x2', 0)
                 .attr('y2', 10);
 
+            // Create a projection that will fit all states including Alaska and Hawaii
             const projection = d3.geoAlbersUsa()
                 .translate([width / 2, height / 2])
-                .scale(width);
+                .scale(width * 0.8); // Scale down a bit to ensure AK and HI are visible
 
             const path = d3.geoPath().projection(projection);
             
             const tooltip = d3.select('#mapTooltip');
 
             d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json').then(function(us) {
+                // Get all state features
+                const statesFeatures = topojson.feature(us, us.objects.states).features;
+                
+                // Adjust projection to fit all states
+                projection.fitSize([width * 0.95, height * 0.95], topojson.feature(us, us.objects.states));
+                
                 svg.append('g')
                     .selectAll('path')
-                    .data(topojson.feature(us, us.objects.states).features)
+                    .data(statesFeatures)
                     .enter().append('path')
                     .attr('d', path)
                     .attr('class', 'state')
@@ -332,6 +379,7 @@
                         selectedState = stateName;
                         currentView = 'counties';
                         showCountyMap(stateName);
+                        showCountyList(stateName);
                     })
                     .on('mouseover', function(event, d) {
                         const stateName = d.properties.name;
@@ -358,21 +406,58 @@
                         tooltip.classed('hidden', true);
                         d3.select(this).attr('stroke-width', 1);
                     });
+
+                // Add state labels
+                svg.append('g')
+                    .selectAll('text')
+                    .data(statesFeatures)
+                    .enter().append('text')
+                    .attr('transform', d => {
+                        const centroid = path.centroid(d);
+                        return `translate(${centroid[0]},${centroid[1]})`;
+                    })
+                    .attr('dy', '.35em')
+                    .attr('text-anchor', 'middle')
+                    .attr('font-size', '8px')
+                    .attr('pointer-events', 'none')
+                    .text(d => {
+                        // Use postal code abbreviations for small states
+                        const stateName = d.properties.name;
+                        const stateAbbreviations = {
+                            'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR',
+                            'California': 'CA', 'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE',
+                            'Florida': 'FL', 'Georgia': 'GA', 'Hawaii': 'HI', 'Idaho': 'ID',
+                            'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA', 'Kansas': 'KS',
+                            'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
+                            'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS',
+                            'Missouri': 'MO', 'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV',
+                            'New Hampshire': 'NH', 'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY',
+                            'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH', 'Oklahoma': 'OK',
+                            'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
+                            'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT',
+                            'Vermont': 'VT', 'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV',
+                            'Wisconsin': 'WI', 'Wyoming': 'WY'
+                        };
+                        return stateAbbreviations[stateName] || stateName;
+                    })
+                    .attr('fill', '#333')
+                    .attr('class', 'dark:text-white');
             });
         }
 
         function showCountyMap(stateName) {
             document.getElementById('backToStates').classList.remove('hidden');
             
-            const width = document.getElementById('map').clientWidth;
-            const height = document.getElementById('map').clientHeight;
+            const mapContainer = document.getElementById('map');
+            const width = mapContainer.clientWidth;
+            const height = mapContainer.clientHeight;
 
             d3.select('#map').select('svg').remove();
 
             const svg = d3.select('#map')
                 .append('svg')
-                .attr('width', width)
-                .attr('height', height);
+                .attr('viewBox', `0 0 ${width} ${height}`)
+                .attr('preserveAspectRatio', 'xMidYMid meet');
 
             const projection = d3.geoMercator()
                 .translate([width / 2, height / 2]);
@@ -409,16 +494,27 @@
                     return;
                 }
 
-                // Adjust projection to fit the state
-                projection.fitExtent([[20, 20], [width - 20, height - 20]], {
-                    type: "FeatureCollection",
-                    features: counties
-                });
-
+                // Store county data for the list view
+                allCounties[stateName] = [];
+                
                 // Get county names
                 const countyNames = {};
-                topojson.feature(us, us.objects.counties).features.forEach(f => {
-                    countyNames[f.id] = f.properties.name;
+                counties.forEach(f => {
+                    // Extract the county name from properties
+                    const countyName = f.properties.name;
+                    countyNames[f.id] = countyName;
+                    
+                    // Store for list view
+                    allCounties[stateName].push({
+                        id: f.id,
+                        name: countyName
+                    });
+                });
+
+                // Adjust projection to fit the state
+                projection.fitSize([width * 0.95, height * 0.95], {
+                    type: "FeatureCollection",
+                    features: counties
                 });
 
                 // Draw counties
@@ -465,6 +561,31 @@
                             .attr('stroke-width', 0.5);
                     });
 
+                // Add county labels for larger counties
+                svg.append('g')
+                    .selectAll('text')
+                    .data(counties)
+                    .enter().append('text')
+                    .attr('transform', d => {
+                        const centroid = path.centroid(d);
+                        return `translate(${centroid[0]},${centroid[1]})`;
+                    })
+                    .attr('dy', '.35em')
+                    .attr('text-anchor', 'middle')
+                    .attr('font-size', '8px')
+                    .attr('pointer-events', 'none')
+                    .text(d => {
+                        const bbox = path.bounds(d);
+                        const width = bbox[1][0] - bbox[0][0];
+                        // Only show labels for larger counties to avoid overcrowding
+                        return width > 30 ? countyNames[d.id] : '';
+                    })
+                    .attr('fill', d => {
+                        const countyName = countyNames[d.id];
+                        return emergencyCounties[stateName]?.includes(countyName) ? '#fff' : '#333';
+                    })
+                    .attr('class', 'dark:text-white');
+
                 // Add state title
                 svg.append('text')
                     .attr('x', width / 2)
@@ -472,6 +593,59 @@
                     .attr('text-anchor', 'middle')
                     .attr('class', 'text-xl font-bold text-gray-800 dark:text-gray-100')
                     .text(stateName);
+            });
+        }
+
+        function showCountyList(stateName) {
+            const countyListContainer = document.getElementById('countyListContainer');
+            const countyListTitle = document.getElementById('countyListTitle');
+            const countyList = document.getElementById('countyList');
+            
+            // Show the container
+            countyListContainer.classList.remove('hidden');
+            
+            // Set the title
+            countyListTitle.textContent = `${stateName} Counties`;
+            
+            // Wait for county data to be loaded
+            setTimeout(() => {
+                updateCountyList(stateName);
+            }, 500);
+        }
+
+        function updateCountyList(stateName) {
+            if (!allCounties[stateName]) return;
+            
+            const countyList = document.getElementById('countyList');
+            const countySearch = document.getElementById('countySearch');
+            const searchTerm = countySearch.value.toLowerCase();
+            
+            countyList.innerHTML = '';
+            
+            // Sort counties alphabetically
+            const sortedCounties = [...allCounties[stateName]].sort((a, b) => a.name.localeCompare(b.name));
+            
+            sortedCounties.forEach(county => {
+                // Skip if doesn't match search
+                if (searchTerm && !county.name.toLowerCase().includes(searchTerm)) return;
+                
+                const isEmergency = emergencyCounties[stateName]?.includes(county.name);
+                
+                const countyItem = document.createElement('div');
+                countyItem.className = `county-list-item p-2 rounded-lg flex justify-between items-center ${isEmergency ? 'bg-red-200 dark:bg-red-800' : ''}`;
+                countyItem.innerHTML = `
+                    <span class="font-medium">${county.name}</span>
+                    <button class="px-2 py-1 text-sm ${isEmergency ? 'bg-gray-500' : 'bg-red-500'} text-white rounded">
+                        ${isEmergency ? 'Remove Emergency' : 'Set Emergency'}
+                    </button>
+                `;
+                
+                // Add event listener to toggle emergency status
+                countyItem.querySelector('button').addEventListener('click', () => {
+                    toggleCountyEmergency(stateName, county.name);
+                });
+                
+                countyList.appendChild(countyItem);
             });
         }
 
@@ -485,6 +659,7 @@
             currentView = 'states';
             selectedState = null;
             document.getElementById('backToStates').classList.add('hidden');
+            document.getElementById('countyListContainer').classList.add('hidden');
             initMap();
         }
 
@@ -506,6 +681,12 @@
                     el.style.display = 'none';
                 }
             });
+        });
+
+        document.getElementById('countySearch').addEventListener('input', function(e) {
+            if (selectedState) {
+                updateCountyList(selectedState);
+            }
         });
 
         document.getElementById('sort').addEventListener('change', function(e) {
@@ -542,9 +723,25 @@
                     initMap();
                 } else if (currentView === 'counties' && selectedState) {
                     showCountyMap(selectedState);
+                    updateCountyList(selectedState);
                 }
             }
         });
+
+        // Handle window resize
+        window.addEventListener('resize', debounce(resizeMap, 250));
+
+        // Debounce function to limit rapid firing of events
+        function debounce(func, wait) {
+            let timeout;
+            return function() {
+                const context = this, args = arguments;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    func.apply(context, args);
+                }, wait);
+            };
+        }
 
         // Start the application
         updateTimes();
