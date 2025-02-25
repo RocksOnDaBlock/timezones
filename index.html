@@ -10,6 +10,12 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <!-- Firebase Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <!-- Firebase Auth -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <style>
         .neumorphic {
             box-shadow: 5px 5px 10px #d1d9e6, -5px -5px 10px #ffffff;
@@ -81,12 +87,95 @@
             height: 100%;
             display: block;
         }
+        .authentication-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .authentication-card {
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            background-color: white;
+        }
+        .dark .authentication-card {
+            background-color: #1f2937;
+            color: white;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .admin-badge {
+            background-color: #3b82f6;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+        }
+        #syncStatus {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 100;
+        }
+        .dark #syncStatus {
+            background-color: rgba(30, 41, 59, 0.8);
+            color: white;
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-800 transition-colors duration-300">
+    <!-- Authentication Modal -->
+    <div id="authContainer" class="authentication-container hidden">
+        <div class="authentication-card neumorphic">
+            <h2 class="text-2xl font-bold mb-4">Sign In</h2>
+            <p class="mb-4">Sign in to view and manage emergency statuses.</p>
+            <div id="loginForm">
+                <div class="mb-4">
+                    <label for="email" class="block mb-2">Email:</label>
+                    <input type="email" id="email" class="w-full p-2 border rounded" placeholder="Email">
+                </div>
+                <div class="mb-4">
+                    <label for="password" class="block mb-2">Password:</label>
+                    <input type="password" id="password" class="w-full p-2 border rounded" placeholder="Password">
+                </div>
+                <div class="mb-4">
+                    <button id="loginButton" class="w-full bg-blue-500 text-white p-2 rounded">Sign In</button>
+                </div>
+                <p id="authError" class="text-red-500 hidden"></p>
+                <div class="text-center">
+                    <button id="guestButton" class="text-blue-500">Continue as Guest</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sync Status Indicator -->
+    <div id="syncStatus" class="hidden">
+        <span id="syncText">Syncing...</span>
+    </div>
+
     <div class="container mx-auto px-4 py-8">
         <header class="mb-8">
-            <h1 class="text-4xl font-bold text-center text-gray-800 dark:text-gray-100 mb-4 float-animation">U.S. State Time Zones & Emergency Status</h1>
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-4xl font-bold text-center text-gray-800 dark:text-gray-100 float-animation flex-grow">U.S. State Time Zones & Emergency Status</h1>
+                <div class="flex items-center">
+                    <span id="userStatus" class="mr-4"></span>
+                    <button id="authButton" class="neumorphic p-2 rounded-lg bg-blue-500 text-white">Sign In</button>
+                </div>
+            </div>
             <div class="flex justify-center items-center flex-wrap">
                 <input type="text" id="search" placeholder="Search states..." class="neumorphic p-2 rounded-lg mr-4 mb-2 bg-transparent dark:text-gray-100">
                 <select id="sort" class="neumorphic p-2 rounded-lg mr-4 mb-2 bg-transparent dark:text-gray-100">
@@ -99,7 +188,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                     </svg>
                 </button>
-                <button id="resetEmergency" class="neumorphic p-2 rounded-lg bg-red-500 text-white">Reset Emergency States</button>
+                <button id="resetEmergency" class="neumorphic p-2 rounded-lg bg-red-500 text-white admin-only hidden">Reset Emergency States</button>
             </div>
         </header>
         <div id="map" class="neumorphic rounded-lg mb-8 h-[500px] relative">
@@ -120,6 +209,46 @@
     </div>
 
     <script>
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyBuDrETC2ES5IMXpXsitBFxErR64_bd0N4",
+    authDomain: "timezones-f6ef7.firebaseapp.com",
+    databaseURL: "https://timezones-f6ef7-default-rtdb.firebaseio.com",
+    projectId: "timezones-f6ef7",
+    storageBucket: "timezones-f6ef7.firebasestorage.app",
+    messagingSenderId: "1009419657806",
+    appId: "1:1009419657806:web:8a91f2f9333903c140591f",
+    measurementId: "G-16TV28DSST"
+  };
+</script>
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+};
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+
+        // User roles and authentication state
+        let isAdmin = false;
+        let currentUser = null;
+        let isGuest = true;
+
+        // References to Firebase data
+        const emergencyStatesRef = database.ref('emergencyStates');
+        const emergencyCountiesRef = database.ref('emergencyCounties');
+        const adminEmailsRef = database.ref('adminEmails');
+
         const states = [
             { name: 'Alabama', timezone: 'America/Chicago' },
             { name: 'Alaska', timezone: 'America/Anchorage' },
@@ -173,10 +302,9 @@
             { name: 'Wyoming', timezone: 'America/Denver' }
         ];
 
-        // Load emergency states from local storage
-        let emergencyStates = JSON.parse(localStorage.getItem('emergencyStates')) || [];
-        // Load emergency counties from local storage
-        let emergencyCounties = JSON.parse(localStorage.getItem('emergencyCounties')) || {};
+        // Central data storage (will be synced with Firebase)
+        let emergencyStates = [];
+        let emergencyCounties = {};
 
         // Current view state
         let currentView = 'states';
@@ -184,6 +312,77 @@
         
         // Store all county data when loaded to use for the list
         let allCounties = {};
+
+        // Show sync status
+        function showSyncStatus(message) {
+            const syncStatus = document.getElementById('syncStatus');
+            const syncText = document.getElementById('syncText');
+            syncText.textContent = message;
+            syncStatus.classList.remove('hidden');
+            setTimeout(() => {
+                syncStatus.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Auth Event Listeners
+        auth.onAuthStateChanged(function(user) {
+            currentUser = user;
+            isGuest = !user;
+            
+            if (user) {
+                // Check if user is admin
+                adminEmailsRef.once('value').then(snapshot => {
+                    const adminEmails = snapshot.val() || [];
+                    isAdmin = adminEmails.includes(user.email);
+                    updateAuthUI();
+                });
+            } else {
+                isAdmin = false;
+                updateAuthUI();
+            }
+        });
+
+        function updateAuthUI() {
+            const authButton = document.getElementById('authButton');
+            const userStatus = document.getElementById('userStatus');
+            const resetButton = document.getElementById('resetEmergency');
+            
+            if (currentUser) {
+                authButton.textContent = 'Sign Out';
+                userStatus.textContent = `Signed in as ${currentUser.email}`;
+                if (isAdmin) {
+                    userStatus.innerHTML += ' <span class="admin-badge">Admin</span>';
+                    
+                    // Show admin-only buttons
+                    document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+                }
+            } else {
+                authButton.textContent = 'Sign In';
+                userStatus.textContent = isGuest ? 'Viewing as Guest' : '';
+                
+                // Hide admin-only buttons
+                document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+            }
+            
+            // Update all controls
+            updateUIEditability();
+        }
+
+        function updateUIEditability() {
+            // Disable editing for non-admins
+            const isEditable = isAdmin;
+            
+            // Find all buttons that toggle emergency statuses and update them
+            document.querySelectorAll('.emergency-toggle, .view-counties button').forEach(button => {
+                if (isEditable) {
+                    button.removeAttribute('disabled');
+                    button.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    button.setAttribute('disabled', 'disabled');
+                    button.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            });
+        }
 
         function isStateCallable(state) {
             const now = moment().tz(state.timezone);
@@ -217,7 +416,7 @@
                     ${isEmergency ? '<p class="text-red-600 dark:text-red-300 font-bold">EMERGENCY</p>' : ''}
                     ${hasCountyEmergencies ? '<p class="text-orange-600 dark:text-orange-300 font-bold">COUNTY EMERGENCIES</p>' : ''}
                     <div class="mt-2 flex flex-wrap gap-2">
-                        <button class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200 emergency-toggle">
+                        <button class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200 emergency-toggle ${!isAdmin ? 'opacity-50 cursor-not-allowed' : ''}">
                             ${isEmergency ? 'Remove Emergency' : 'Set Emergency'}
                         </button>
                         <button class="px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors duration-200 view-counties">
@@ -229,7 +428,11 @@
 
                 // Add event listener to the emergency button
                 const emergencyButton = stateElement.querySelector('.emergency-toggle');
-                emergencyButton.addEventListener('click', () => toggleEmergencyState(state.name));
+                emergencyButton.addEventListener('click', () => {
+                    if (isAdmin) {
+                        toggleEmergencyState(state.name);
+                    }
+                });
 
                 // Add event listener to the view counties button
                 const viewCountiesButton = stateElement.querySelector('.view-counties');
@@ -248,20 +451,33 @@
         }
 
         function toggleEmergencyState(stateName) {
+            if (!isAdmin) return;
+            
+            showSyncStatus('Updating...');
+            
             const index = emergencyStates.indexOf(stateName);
             if (index > -1) {
                 emergencyStates.splice(index, 1);
             } else {
                 emergencyStates.push(stateName);
             }
-            localStorage.setItem('emergencyStates', JSON.stringify(emergencyStates));
-            updateTimes();
-            if (currentView === 'states') {
-                initMap();
-            }
+            
+            // Update Firebase
+            emergencyStatesRef.set(emergencyStates)
+                .then(() => {
+                    showSyncStatus('Updated!');
+                })
+                .catch(error => {
+                    console.error("Error updating emergency states:", error);
+                    showSyncStatus('Error updating!');
+                });
         }
 
         function toggleCountyEmergency(stateName, countyName) {
+            if (!isAdmin) return;
+            
+            showSyncStatus('Updating...');
+            
             if (!emergencyCounties[stateName]) {
                 emergencyCounties[stateName] = [];
             }
@@ -276,10 +492,15 @@
                 emergencyCounties[stateName].push(countyName);
             }
             
-            localStorage.setItem('emergencyCounties', JSON.stringify(emergencyCounties));
-            updateCountyMap(stateName);
-            updateCountyList(stateName);
-            updateTimes();
+            // Update Firebase
+            emergencyCountiesRef.set(emergencyCounties)
+                .then(() => {
+                    showSyncStatus('Updated!');
+                })
+                .catch(error => {
+                    console.error("Error updating emergency counties:", error);
+                    showSyncStatus('Error updating!');
+                });
         }
 
         function resizeMap() {
@@ -534,8 +755,10 @@
                     .attr('stroke', '#fff')
                     .attr('stroke-width', 0.5)
                     .on('click', function(event, d) {
-                        const countyName = countyNames[d.id];
-                        toggleCountyEmergency(stateName, countyName);
+                        if (isAdmin) {
+                            const countyName = countyNames[d.id];
+                            toggleCountyEmergency(stateName, countyName);
+                        }
                     })
                     .on('mouseover', function(event, d) {
                         const countyName = countyNames[d.id];
@@ -544,7 +767,7 @@
                         tooltip.html(`
                             <strong>${countyName} County</strong><br>
                             ${isEmergency ? '<span class="text-red-500">Emergency Status</span>' : 'Normal Status'}<br>
-                            Click to ${isEmergency ? 'remove' : 'add'} emergency status
+                            ${isAdmin ? `Click to ${isEmergency ? 'remove' : 'add'} emergency status` : ''}
                         `)
                         .style('left', (event.pageX + 15) + 'px')
                         .style('top', (event.pageY - 28) + 'px')
@@ -635,14 +858,16 @@
                 countyItem.className = `county-list-item p-2 rounded-lg flex justify-between items-center ${isEmergency ? 'bg-red-200 dark:bg-red-800' : ''}`;
                 countyItem.innerHTML = `
                     <span class="font-medium">${county.name}</span>
-                    <button class="px-2 py-1 text-sm ${isEmergency ? 'bg-gray-500' : 'bg-red-500'} text-white rounded">
+                    <button class="px-2 py-1 text-sm ${isEmergency ? 'bg-gray-500' : 'bg-red-500'} text-white rounded ${!isAdmin ? 'opacity-50 cursor-not-allowed' : ''}">
                         ${isEmergency ? 'Remove Emergency' : 'Set Emergency'}
                     </button>
                 `;
                 
                 // Add event listener to toggle emergency status
                 countyItem.querySelector('button').addEventListener('click', () => {
-                    toggleCountyEmergency(stateName, county.name);
+                    if (isAdmin) {
+                        toggleCountyEmergency(stateName, county.name);
+                    }
                 });
                 
                 countyList.appendChild(countyItem);
@@ -667,8 +892,92 @@
             document.body.classList.toggle('dark');
         }
 
+        // Authentication functions
+        function showAuthModal() {
+            document.getElementById('authContainer').classList.remove('hidden');
+            document.getElementById('authError').classList.add('hidden');
+        }
+
+        function hideAuthModal() {
+            document.getElementById('authContainer').classList.add('hidden');
+        }
+
+        function handleLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            document.getElementById('authError').classList.add('hidden');
+            
+            if (!email || !password) {
+                document.getElementById('authError').textContent = 'Please enter email and password';
+                document.getElementById('authError').classList.remove('hidden');
+                return;
+            }
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    hideAuthModal();
+                })
+                .catch(error => {
+                    document.getElementById('authError').textContent = error.message;
+                    document.getElementById('authError').classList.remove('hidden');
+                });
+        }
+
+        function handleLogout() {
+            auth.signOut();
+        }
+
+        function handleGuestAccess() {
+            isGuest = true;
+            hideAuthModal();
+            updateAuthUI();
+        }
+
+        function resetEmergencyStatus() {
+            if (!isAdmin) return;
+            
+            if (confirm('Are you sure you want to reset all emergency states and counties?')) {
+                showSyncStatus('Resetting emergencies...');
+                
+                emergencyStates = [];
+                emergencyCounties = {};
+                
+                // Update Firebase
+                Promise.all([
+                    emergencyStatesRef.set(emergencyStates),
+                    emergencyCountiesRef.set(emergencyCounties)
+                ])
+                .then(() => {
+                    showSyncStatus('Emergency status reset!');
+                    updateTimes();
+                    if (currentView === 'states') {
+                        initMap();
+                    } else if (currentView === 'counties' && selectedState) {
+                        showCountyMap(selectedState);
+                        updateCountyList(selectedState);
+                    }
+                })
+                .catch(error => {
+                    console.error("Error resetting emergency status:", error);
+                    showSyncStatus('Error resetting!');
+                });
+            }
+        }
+
+        // Event listeners
         document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
         document.getElementById('backToStates').addEventListener('click', backToStatesView);
+        document.getElementById('authButton').addEventListener('click', function() {
+            if (currentUser) {
+                handleLogout();
+            } else {
+                showAuthModal();
+            }
+        });
+        document.getElementById('loginButton').addEventListener('click', handleLogin);
+        document.getElementById('guestButton').addEventListener('click', handleGuestAccess);
+        document.getElementById('resetEmergency').addEventListener('click', resetEmergencyStatus);
 
         document.getElementById('search').addEventListener('input', function(e) {
             const searchTerm = e.target.value.toLowerCase();
@@ -712,22 +1021,6 @@
             stateElements.forEach(el => stateList.appendChild(el));
         });
 
-        document.getElementById('resetEmergency').addEventListener('click', function() {
-            if (confirm('Are you sure you want to reset all emergency states and counties?')) {
-                emergencyStates = [];
-                emergencyCounties = {};
-                localStorage.setItem('emergencyStates', JSON.stringify(emergencyStates));
-                localStorage.setItem('emergencyCounties', JSON.stringify(emergencyCounties));
-                updateTimes();
-                if (currentView === 'states') {
-                    initMap();
-                } else if (currentView === 'counties' && selectedState) {
-                    showCountyMap(selectedState);
-                    updateCountyList(selectedState);
-                }
-            }
-        });
-
         // Handle window resize
         window.addEventListener('resize', debounce(resizeMap, 250));
 
@@ -743,17 +1036,60 @@
             };
         }
 
-        // Start the application
-        updateTimes();
-        initMap();
-        
-        // Update times and map every minute
-        setInterval(() => {
+        // Set up Firebase data listeners
+        function setupFirebaseListeners() {
+            // Listen for changes to emergency states
+            emergencyStatesRef.on('value', (snapshot) => {
+                emergencyStates = snapshot.val() || [];
+                updateTimes();
+                
+                if (currentView === 'states') {
+                    initMap();
+                }
+            });
+            
+            // Listen for changes to emergency counties
+            emergencyCountiesRef.on('value', (snapshot) => {
+                emergencyCounties = snapshot.val() || {};
+                updateTimes();
+                
+                if (currentView === 'counties' && selectedState) {
+                    showCountyMap(selectedState);
+                    updateCountyList(selectedState);
+                } else if (currentView === 'states') {
+                    initMap();
+                }
+            });
+        }
+
+        // Initialize application
+        function init() {
+            // Check for existing auth state
+            auth.onAuthStateChanged(user => {
+                if (!user) {
+                    // Show auth modal on first load if not logged in
+                    // Uncomment this if you want to force login
+                    // showAuthModal();
+                }
+            });
+            
+            // Set up Firebase listeners
+            setupFirebaseListeners();
+            
+            // Initial UI update
             updateTimes();
-            if (currentView === 'states') {
-                initMap();
-            }
-        }, 60000);
+            
+            // Update times and map every minute
+            setInterval(() => {
+                updateTimes();
+                if (currentView === 'states') {
+                    initMap();
+                }
+            }, 60000);
+        }
+
+        // Start the application
+        init();
     </script>
 </body>
 </html>
