@@ -208,22 +208,6 @@
         <div id="stateList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
     </div>
 
-    <!-- Debug Button -->
-    <button id="debugButton" class="fixed top-4 right-4 bg-yellow-500 text-white p-2 rounded">Debug</button>
-
-    <!-- Quick Admin Add Tool -->
-    <div id="quickAdminAdd" class="fixed bottom-4 right-4 hidden neumorphic p-4 rounded-lg bg-white dark:bg-gray-700">
-        <h3 class="font-bold mb-2 text-gray-800 dark:text-gray-100">Add New Admin</h3>
-        <div class="flex">
-            <input type="email" id="quickAdminEmail" placeholder="Admin email" class="p-2 border rounded-l dark:bg-gray-800 dark:text-white">
-            <button id="quickAddAdminBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-r">Add</button>
-        </div>
-        <div id="currentAdmins" class="mt-3">
-            <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300">Current Admins:</h4>
-            <ul id="adminList" class="mt-1 text-sm text-gray-600 dark:text-gray-400 max-h-24 overflow-y-auto"></ul>
-        </div>
-    </div>
-
     <script>
         // Firebase configuration
         const firebaseConfig = {
@@ -327,54 +311,19 @@
             }, 3000);
         }
 
-        // Debug function
-        function debugState() {
-            console.log("Debug Info:");
-            console.log("Current User:", currentUser?.email);
-            console.log("Is Admin:", isAdmin);
-            console.log("Admin Emails:", adminEmails);
-            
-            // Force refresh admin state
-            if (currentUser) {
-                adminEmailsRef.once('value').then(snapshot => {
-                    const adminEmails = snapshot.val() || [];
-                    console.log("Admin emails from Firebase:", adminEmails);
-                    isAdmin = Array.isArray(adminEmails) && adminEmails.includes(currentUser.email);
-                    console.log("Updated admin status:", isAdmin);
-                    updateAuthUI();
-                });
-            }
-        }
-
-        // Global variable to store admin emails for easier access
-        let adminEmails = [];
-
         // Auth Event Listeners
         auth.onAuthStateChanged(function(user) {
             currentUser = user;
             isGuest = !user;
             
             if (user) {
-                console.log("User signed in:", user.email);
                 // Check if user is admin
                 adminEmailsRef.once('value').then(snapshot => {
-                    adminEmails = snapshot.val() || [];
-                    console.log("Admin emails:", adminEmails);
-                    
-                    // Make sure adminEmails is an array
-                    if (!Array.isArray(adminEmails)) {
-                        console.error("adminEmails is not an array:", adminEmails);
-                        adminEmails = [];
-                    }
-                    
+                    const adminEmails = snapshot.val() || [];
                     isAdmin = adminEmails.includes(user.email);
-                    console.log("Is user admin:", isAdmin);
                     updateAuthUI();
-                }).catch(error => {
-                    console.error("Error fetching admin emails:", error);
                 });
             } else {
-                console.log("User signed out");
                 isAdmin = false;
                 updateAuthUI();
             }
@@ -393,15 +342,6 @@
                     
                     // Show admin-only buttons
                     document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
-                    
-                    // Set up the quick admin adder
-                    setupQuickAdminAdder();
-                } else {
-                    // Hide admin-only buttons
-                    document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
-                
-                    // Hide quick admin adder
-                    document.getElementById('quickAdminAdd').classList.add('hidden');
                 }
             } else {
                 authButton.textContent = 'Sign In';
@@ -409,9 +349,6 @@
                 
                 // Hide admin-only buttons
                 document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
-                
-                // Hide quick admin adder
-                document.getElementById('quickAdminAdd').classList.add('hidden');
             }
             
             // Update all controls
@@ -421,10 +358,9 @@
         function updateUIEditability() {
             // Disable editing for non-admins
             const isEditable = isAdmin;
-            console.log("Updating UI editability. Is editable:", isEditable);
             
             // Find all buttons that toggle emergency statuses and update them
-            document.querySelectorAll('.emergency-toggle').forEach(button => {
+            document.querySelectorAll('.emergency-toggle, .view-counties button').forEach(button => {
                 if (isEditable) {
                     button.removeAttribute('disabled');
                     button.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -480,24 +416,8 @@
                 // Add event listener to the emergency button
                 const emergencyButton = stateElement.querySelector('.emergency-toggle');
                 emergencyButton.addEventListener('click', () => {
-                    console.log("Attempting to toggle emergency for:", state.name);
-                    console.log("Is admin:", isAdmin);
-                    
-                    // Force check admin status
-                    if (currentUser) {
-                        adminEmailsRef.once('value').then(snapshot => {
-                            const adminEmails = snapshot.val() || [];
-                            isAdmin = Array.isArray(adminEmails) && adminEmails.includes(currentUser.email);
-                            console.log("Updated admin status:", isAdmin);
-                            
-                            if (isAdmin) {
-                                toggleEmergencyState(state.name);
-                            } else {
-                                alert("You need admin privileges to perform this action");
-                            }
-                        });
-                    } else {
-                        alert("You must be signed in as an admin to perform this action");
+                    if (isAdmin) {
+                        toggleEmergencyState(state.name);
                     }
                 });
 
@@ -518,12 +438,8 @@
         }
 
         function toggleEmergencyState(stateName) {
-            if (!isAdmin) {
-                console.log("Not an admin, cannot toggle emergency state");
-                return;
-            }
+            if (!isAdmin) return;
             
-            console.log("Toggling emergency state for:", stateName);
             showSyncStatus('Updating...');
             
             const index = emergencyStates.indexOf(stateName);
@@ -537,22 +453,16 @@
             emergencyStatesRef.set(emergencyStates)
                 .then(() => {
                     showSyncStatus('Updated!');
-                    console.log("Emergency state updated successfully");
                 })
                 .catch(error => {
                     console.error("Error updating emergency states:", error);
                     showSyncStatus('Error updating!');
-                    alert("Error updating emergency state: " + error.message);
                 });
         }
 
         function toggleCountyEmergency(stateName, countyName) {
-            if (!isAdmin) {
-                console.log("Not an admin, cannot toggle county emergency");
-                return;
-            }
+            if (!isAdmin) return;
             
-            console.log("Toggling emergency for county:", countyName, "in state:", stateName);
             showSyncStatus('Updating...');
             
             if (!emergencyCounties[stateName]) {
@@ -573,12 +483,10 @@
             emergencyCountiesRef.set(emergencyCounties)
                 .then(() => {
                     showSyncStatus('Updated!');
-                    console.log("County emergency updated successfully");
                 })
                 .catch(error => {
                     console.error("Error updating emergency counties:", error);
                     showSyncStatus('Error updating!');
-                    alert("Error updating county emergency state: " + error.message);
                 });
         }
 
@@ -837,8 +745,6 @@
                         if (isAdmin) {
                             const countyName = countyNames[d.id];
                             toggleCountyEmergency(stateName, countyName);
-                        } else {
-                            alert("You need admin privileges to perform this action");
                         }
                     })
                     .on('mouseover', function(event, d) {
@@ -948,8 +854,6 @@
                 countyItem.querySelector('button').addEventListener('click', () => {
                     if (isAdmin) {
                         toggleCountyEmergency(stateName, county.name);
-                    } else {
-                        alert("You need admin privileges to perform this action");
                     }
                 });
                 
@@ -997,15 +901,11 @@
                 return;
             }
             
-            console.log("Attempting to sign in with:", email);
-            
             auth.signInWithEmailAndPassword(email, password)
                 .then(userCredential => {
-                    console.log("Sign in successful:", userCredential.user.email);
                     hideAuthModal();
                 })
                 .catch(error => {
-                    console.error("Sign in error:", error);
                     document.getElementById('authError').textContent = error.message;
                     document.getElementById('authError').classList.remove('hidden');
                 });
@@ -1052,183 +952,6 @@
             }
         }
 
-        // Quick Admin Management
-        function setupQuickAdminAdder() {
-            const container = document.getElementById('quickAdminAdd');
-            const emailInput = document.getElementById('quickAdminEmail');
-            const addButton = document.getElementById('quickAddAdminBtn');
-            
-            console.log("Setting up quick admin adder");
-            
-            // Show the container
-            container.classList.remove('hidden');
-            
-            // Load and display current admins
-            updateAdminList();
-            
-            // Remove any existing event listener
-            addButton.onclick = null;
-            
-            // Button event
-            addButton.addEventListener('click', function() {
-                const email = emailInput.value.trim();
-                if (!email || !email.includes('@')) {
-                    alert('Please enter a valid email address');
-                    return;
-                }
-                
-                addNewAdmin(email);
-            });
-        }
-        
-        function updateAdminList() {
-            const adminListElement = document.getElementById('adminList');
-            adminListElement.innerHTML = '';
-            
-            adminEmailsRef.once('value').then(snapshot => {
-                adminEmails = snapshot.val() || [];
-                console.log("Updating admin list with:", adminEmails);
-                
-                if (!adminEmails || adminEmails.length === 0) {
-                    adminListElement.innerHTML = '<li class="italic">No admins found</li>';
-                    return;
-                }
-                
-                // Make sure adminEmails is an array
-                if (!Array.isArray(adminEmails)) {
-                    console.error("adminEmails is not an array:", adminEmails);
-                    adminEmailsRef.set([]); // Reset to empty array
-                    adminListElement.innerHTML = '<li class="italic">No admins found (reset required)</li>';
-                    return;
-                }
-                
-                adminEmails.forEach(email => {
-                    const li = document.createElement('li');
-                    li.className = 'flex justify-between items-center mb-1';
-                    
-                    // Don't allow removing yourself
-                    const isCurrentUser = currentUser && email === currentUser.email;
-                    
-                    li.innerHTML = `
-                        <span>${email}</span>
-                        ${!isCurrentUser ? `
-                            <button class="text-xs text-red-500 hover:text-red-700" data-email="${email}">
-                                Remove
-                            </button>
-                        ` : '<span class="text-xs text-gray-500">(you)</span>'}
-                    `;
-                    
-                    if (!isCurrentUser) {
-                        li.querySelector('button').addEventListener('click', function() {
-                            const emailToRemove = this.getAttribute('data-email');
-                            removeAdmin(emailToRemove);
-                        });
-                    }
-                    
-                    adminListElement.appendChild(li);
-                });
-            });
-        }
-        
-        function addNewAdmin(email) {
-            console.log("Attempting to add new admin:", email);
-            showSyncStatus('Adding admin...');
-            
-            adminEmailsRef.once('value').then(snapshot => {
-                let adminEmails = snapshot.val() || [];
-                
-                // Ensure adminEmails is an array
-                if (!Array.isArray(adminEmails)) {
-                    console.log("adminEmails is not an array, resetting to empty array");
-                    adminEmails = [];
-                }
-                
-                // Check if already exists
-                if (adminEmails.includes(email)) {
-                    console.log("Email already exists as admin");
-                    alert('This email is already an admin');
-                    return;
-                }
-                
-                // Add to list
-                adminEmails.push(email);
-                console.log("Updated admin list:", adminEmails);
-                
-                // Update Firebase
-                adminEmailsRef.set(adminEmails)
-                    .then(() => {
-                        console.log("Admin added successfully");
-                        showSyncStatus('Admin added!');
-                        document.getElementById('quickAdminEmail').value = '';
-                        updateAdminList();
-                    })
-                    .catch(error => {
-                        console.error("Error adding admin:", error);
-                        showSyncStatus('Error adding admin!');
-                        alert('Error adding admin: ' + error.message);
-                    });
-            }).catch(error => {
-                console.error("Error fetching admin emails:", error);
-                showSyncStatus('Error adding admin!');
-                alert('Error fetching admin list: ' + error.message);
-            });
-        }
-        
-        function removeAdmin(email) {
-            if (confirm(`Are you sure you want to remove ${email} as an admin?`)) {
-                console.log("Attempting to remove admin:", email);
-                showSyncStatus('Removing admin...');
-                
-                adminEmailsRef.once('value').then(snapshot => {
-                    let adminEmails = snapshot.val() || [];
-                    
-                    // Ensure adminEmails is an array
-                    if (!Array.isArray(adminEmails)) {
-                        console.log("adminEmails is not an array, resetting to empty array");
-                        adminEmails = [];
-                    }
-                    
-                    // Remove from list
-                    adminEmails = adminEmails.filter(e => e !== email);
-                    console.log("Updated admin list:", adminEmails);
-                    
-                    // Update Firebase
-                    adminEmailsRef.set(adminEmails)
-                        .then(() => {
-                            console.log("Admin removed successfully");
-                            showSyncStatus('Admin removed!');
-                            updateAdminList();
-                        })
-                        .catch(error => {
-                            console.error("Error removing admin:", error);
-                            showSyncStatus('Error removing admin!');
-                            alert('Error removing admin: ' + error.message);
-                        });
-                });
-            }
-        }
-
-        // This function ensures the adminEmails array exists in Firebase
-        function initializeAdminEmailsIfNeeded() {
-            adminEmailsRef.once('value').then(snapshot => {
-                const exists = snapshot.exists();
-                if (!exists) {
-                    console.log("adminEmails node doesn't exist, creating it");
-                    adminEmailsRef.set([])
-                        .then(() => console.log("adminEmails initialized as empty array"))
-                        .catch(err => console.error("Error initializing adminEmails:", err));
-                } else {
-                    const val = snapshot.val();
-                    if (!Array.isArray(val)) {
-                        console.log("adminEmails is not an array, resetting it:", val);
-                        adminEmailsRef.set([])
-                            .then(() => console.log("adminEmails reset to empty array"))
-                            .catch(err => console.error("Error resetting adminEmails:", err));
-                    }
-                }
-            });
-        }
-
         // Event listeners
         document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
         document.getElementById('backToStates').addEventListener('click', backToStatesView);
@@ -1242,7 +965,6 @@
         document.getElementById('loginButton').addEventListener('click', handleLogin);
         document.getElementById('guestButton').addEventListener('click', handleGuestAccess);
         document.getElementById('resetEmergency').addEventListener('click', resetEmergencyStatus);
-        document.getElementById('debugButton').addEventListener('click', debugState);
 
         document.getElementById('search').addEventListener('input', function(e) {
             const searchTerm = e.target.value.toLowerCase();
@@ -1325,27 +1047,11 @@
                     initMap();
                 }
             });
-            
-            // Listen for changes to admin emails
-            adminEmailsRef.on('value', (snapshot) => {
-                adminEmails = snapshot.val() || [];
-                console.log("Admin emails updated from Firebase:", adminEmails);
-                
-                // Update admin status if currently logged in
-                if (currentUser) {
-                    isAdmin = Array.isArray(adminEmails) && adminEmails.includes(currentUser.email);
-                    console.log("Admin status updated:", isAdmin);
-                    updateAuthUI();
-                }
-            });
         }
 
         // Initialize application
         function init() {
             console.log("Initializing application...");
-            
-            // Initialize admin emails array if needed
-            initializeAdminEmailsIfNeeded();
             
             // Set up Firebase listeners
             setupFirebaseListeners();
