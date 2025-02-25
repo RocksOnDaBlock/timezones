@@ -208,6 +208,19 @@
         <div id="stateList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
     </div>
 
+    <!-- Quick Admin Add Tool -->
+    <div id="quickAdminAdd" class="fixed bottom-4 right-4 hidden neumorphic p-4 rounded-lg bg-white dark:bg-gray-700">
+        <h3 class="font-bold mb-2 text-gray-800 dark:text-gray-100">Add New Admin</h3>
+        <div class="flex">
+            <input type="email" id="quickAdminEmail" placeholder="Admin email" class="p-2 border rounded-l dark:bg-gray-800 dark:text-white">
+            <button id="quickAddAdminBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-r">Add</button>
+        </div>
+        <div id="currentAdmins" class="mt-3">
+            <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300">Current Admins:</h4>
+            <ul id="adminList" class="mt-1 text-sm text-gray-600 dark:text-gray-400 max-h-24 overflow-y-auto"></ul>
+        </div>
+    </div>
+
     <script>
         // Firebase configuration
         const firebaseConfig = {
@@ -342,6 +355,9 @@
                     
                     // Show admin-only buttons
                     document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+                    
+                    // Set up the quick admin adder
+                    setupQuickAdminAdder();
                 }
             } else {
                 authButton.textContent = 'Sign In';
@@ -349,6 +365,9 @@
                 
                 // Hide admin-only buttons
                 document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+                
+                // Hide quick admin adder
+                document.getElementById('quickAdminAdd').classList.add('hidden');
             }
             
             // Update all controls
@@ -948,6 +967,125 @@
                 .catch(error => {
                     console.error("Error resetting emergency status:", error);
                     showSyncStatus('Error resetting!');
+                });
+            }
+        }
+
+        // Quick Admin Management
+        function setupQuickAdminAdder() {
+            const container = document.getElementById('quickAdminAdd');
+            const emailInput = document.getElementById('quickAdminEmail');
+            const addButton = document.getElementById('quickAddAdminBtn');
+            
+            // Show the container
+            container.classList.remove('hidden');
+            
+            // Load and display current admins
+            updateAdminList();
+            
+            // Button event
+            addButton.onclick = function() {
+                const email = emailInput.value.trim();
+                if (!email || !email.includes('@')) {
+                    alert('Please enter a valid email address');
+                    return;
+                }
+                
+                addNewAdmin(email);
+            };
+        }
+        
+        function updateAdminList() {
+            const adminListElement = document.getElementById('adminList');
+            adminListElement.innerHTML = '';
+            
+            adminEmailsRef.once('value').then(snapshot => {
+                const adminEmails = snapshot.val() || [];
+                
+                if (adminEmails.length === 0) {
+                    adminListElement.innerHTML = '<li class="italic">No admins found</li>';
+                    return;
+                }
+                
+                adminEmails.forEach(email => {
+                    const li = document.createElement('li');
+                    li.className = 'flex justify-between items-center mb-1';
+                    
+                    // Don't allow removing yourself
+                    const isCurrentUser = currentUser && email === currentUser.email;
+                    
+                    li.innerHTML = `
+                        <span>${email}</span>
+                        ${!isCurrentUser ? `
+                            <button class="text-xs text-red-500 hover:text-red-700" data-email="${email}">
+                                Remove
+                            </button>
+                        ` : '<span class="text-xs text-gray-500">(you)</span>'}
+                    `;
+                    
+                    if (!isCurrentUser) {
+                        li.querySelector('button').addEventListener('click', function() {
+                            const emailToRemove = this.getAttribute('data-email');
+                            removeAdmin(emailToRemove);
+                        });
+                    }
+                    
+                    adminListElement.appendChild(li);
+                });
+            });
+        }
+        
+        function addNewAdmin(email) {
+            showSyncStatus('Adding admin...');
+            
+            adminEmailsRef.once('value').then(snapshot => {
+                let adminEmails = snapshot.val() || [];
+                
+                // Check if already exists
+                if (adminEmails.includes(email)) {
+                    alert('This email is already an admin');
+                    return;
+                }
+                
+                // Add to list
+                adminEmails.push(email);
+                
+                // Update Firebase
+                adminEmailsRef.set(adminEmails)
+                    .then(() => {
+                        showSyncStatus('Admin added!');
+                        document.getElementById('quickAdminEmail').value = '';
+                        updateAdminList();
+                    })
+                    .catch(error => {
+                        console.error("Error adding admin:", error);
+                        showSyncStatus('Error adding admin!');
+                        alert('Error adding admin: ' + error.message);
+                    });
+            });
+        }
+        
+        function removeAdmin(email) {
+            if (confirm(`Are you sure you want to remove ${email} as an admin?`)) {
+                showSyncStatus('Removing admin...');
+                
+                adminEmailsRef.once('value').then(snapshot => {
+                    let adminEmails = snapshot.val() || [];
+                    
+                    // Remove from list
+                    adminEmails = adminEmails.filter(e => e !== email);
+                    
+                    // Update Firebase
+                    adminEmailsRef.set(adminEmails)
+                        .then(() => {
+                            showSyncStatus('Admin removed!');
+                            updateAdminList();
+                        })
+                        .catch(error => {
+                            console.error("Error removing admin:", error);
+                            showSyncStatus('Error removing admin!');
+                            alert('Error removing admin: ' + error.message);
+                        });
                 });
             }
         }
